@@ -16,7 +16,7 @@ import scipy.sparse.linalg
 
 
 
-class linearPoiseuille:
+class linearBackwardFacingStep:
 
  # ------------------------------------------------------------------------------------------------------
  # Use:
@@ -47,7 +47,7 @@ class linearPoiseuille:
   _self.y = _y
   _self.maxVx = 3.0/2.0
   _self.L = 1.0
-  _self.benchmark_problem = 'linear Poiseuille'
+  _self.benchmark_problem = 'linear Backward Facing Step'
 
 
  def xVelocityCondition(_self, _boundaryEdges, _LHS0, _neighborsNodes):
@@ -66,17 +66,19 @@ class linearPoiseuille:
    v2 = _self.boundaryEdges[i][2] - 1
 
    # Noslip 
-   if line == 1 or line == 4:
+   if line == 2 or line == 4 or line == 5 or line == 6:
     _self.aux1BC[v1] = 0.0
     _self.aux1BC[v2] = 0.0
  
     _self.dirichletNodes.append(v1)
     _self.dirichletNodes.append(v2)
 
+ ---------------------------------- IT IS WRONG ------------------
    # Inflow
-   elif line == 3:
+   elif line == 1:
     _self.aux1BC[v1] = (4.0*_self.maxVx)*(_self.y[v1]/_self.L**2)*(_self.L - _self.y[v1])
     _self.aux1BC[v2] = (4.0*_self.maxVx)*(_self.y[v2]/_self.L**2)*(_self.L - _self.y[v2])
+ ---------------------------------- IT IS WRONG ------------------
 
     _self.dirichletNodes.append(v1)
     _self.dirichletNodes.append(v2)
@@ -114,7 +116,7 @@ class linearPoiseuille:
    v2 = _self.boundaryEdges[i][2] - 1
 
    # Noslip 
-   if line == 1 or line == 4:
+   if line == 2 or line == 4 or line == 5 or line == 6:
     _self.aux1BC[v1] = 0.0
     _self.aux1BC[v2] = 0.0
  
@@ -163,7 +165,7 @@ class linearPoiseuille:
    # Symmetric axis (Bottom Line)
    # psi_bottom can be any value. Because, important is psi_top - psi_bottom.
    # In this case, psi_bottom is zero
-   if line == 4:
+   if line == 4 or line == 5 or line == 6:
     _self.aux1BC[v1] = 0.0
     _self.aux1BC[v2] = 0.0
  
@@ -174,8 +176,10 @@ class linearPoiseuille:
    # Ref: Batchelor 1967 pag. 78 eq. 2.2.12
    # As psi_bottom is zero, so psi_top is:
    elif line == 1:
+ ---------------------------------- IT IS WRONG ------------------
     _self.aux1BC[v1] = (_self.maxVx*(2.0/3.0))*(_self.L)
     _self.aux1BC[v2] = (_self.maxVx*(2.0/3.0))*(_self.L)
+ ---------------------------------- IT IS WRONG ------------------
 
     _self.dirichletNodes.append(v1)
     _self.dirichletNodes.append(v2)
