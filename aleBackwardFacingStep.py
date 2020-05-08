@@ -109,7 +109,7 @@ start_time = time()
 
 # Linear and Mini Elements
 if polynomial_option == 1 or polynomial_option == 2:
- mshFileName = 'linearPoiseuille.msh'
+ mshFileName = 'linearBackwardFacingStep.msh'
  #mshFileName = 'mesh1.msh'
  #mshFileName = 'mesh2.msh'
  #mshFileName = 'mesh3.msh'
@@ -252,18 +252,18 @@ if polynomial_option == 1 or polynomial_option == 2:
 
  # Applying vx condition
  xVelocityLHS0 = sps.lil_matrix.copy(M)
- xVelocityBC = benchmarkProblems.linearPoiseuille(numPhysical,numNodes,x,y)
+ xVelocityBC = benchmarkProblems.linearBackwardFacingStep(numPhysical,numNodes,x,y)
  xVelocityBC.xVelocityCondition(boundaryEdges,xVelocityLHS0,neighborsNodes)
  benchmark_problem = xVelocityBC.benchmark_problem
 
  # Applying vr condition
  yVelocityLHS0 = sps.lil_matrix.copy(M)
- yVelocityBC = benchmarkProblems.linearPoiseuille(numPhysical,numNodes,x,y)
+ yVelocityBC = benchmarkProblems.linearBackwardFacingStep(numPhysical,numNodes,x,y)
  yVelocityBC.yVelocityCondition(boundaryEdges,yVelocityLHS0,neighborsNodes)
  
  # Applying psi condition
  streamFunctionLHS0 = sps.lil_matrix.copy(Kxx) + sps.lil_matrix.copy(Kyy)
- streamFunctionBC = benchmarkProblems.linearPoiseuille(numPhysical,numNodes,x,y)
+ streamFunctionBC = benchmarkProblems.linearBackwardFacingStep(numPhysical,numNodes,x,y)
  streamFunctionBC.streamFunctionCondition(boundaryEdges,streamFunctionLHS0,neighborsNodes)
 
  # Applying vorticity condition
@@ -502,18 +502,18 @@ for t in tqdm(range(1, nt)):
  
     # Applying vx condition
     xVelocityLHS0 = sps.lil_matrix.copy(M)
-    xVelocityBC = benchmarkProblems.linearPoiseuille(numPhysical,numNodes,x,y)
+    xVelocityBC = benchmarkProblems.linearBackwardFacingStep(numPhysical,numNodes,x,y)
     xVelocityBC.xVelocityCondition(boundaryEdges,xVelocityLHS0,neighborsNodes)
     benchmark_problem = xVelocityBC.benchmark_problem
    
     # Applying vr condition
     yVelocityLHS0 = sps.lil_matrix.copy(M)
-    yVelocityBC = benchmarkProblems.linearPoiseuille(numPhysical,numNodes,x,y)
+    yVelocityBC = benchmarkProblems.linearBackwardFacingStep(numPhysical,numNodes,x,y)
     yVelocityBC.yVelocityCondition(boundaryEdges,yVelocityLHS0,neighborsNodes)
     
     # Applying psi condition
     streamFunctionLHS0 = sps.lil_matrix.copy(Kxx) + sps.lil_matrix.copy(Kyy)
-    streamFunctionBC = benchmarkProblems.linearPoiseuille(numPhysical,numNodes,x,y)
+    streamFunctionBC = benchmarkProblems.linearBackwardFacingStep(numPhysical,numNodes,x,y)
     streamFunctionBC.streamFunctionCondition(boundaryEdges,streamFunctionLHS0,neighborsNodes)
    
     # Applying vorticity condition

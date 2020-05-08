@@ -45,8 +45,7 @@ class linearBackwardFacingStep:
   _self.numNodes = _numNodes
   _self.x = _x
   _self.y = _y
-  _self.maxVx = 3.0/2.0
-  _self.L = 1.0
+  _self.maxVx = 3.0/2.0 #calculated via Navier-Stokes where y = [1,3]
   _self.benchmark_problem = 'linear Backward Facing Step'
 
 
@@ -66,19 +65,18 @@ class linearBackwardFacingStep:
    v2 = _self.boundaryEdges[i][2] - 1
 
    # Noslip 
-   if line == 2 or line == 4 or line == 5 or line == 6:
+   if line == 1 or line == 4:
     _self.aux1BC[v1] = 0.0
     _self.aux1BC[v2] = 0.0
  
     _self.dirichletNodes.append(v1)
     _self.dirichletNodes.append(v2)
 
- ---------------------------------- IT IS WRONG ------------------
    # Inflow
-   elif line == 1:
-    _self.aux1BC[v1] = (4.0*_self.maxVx)*(_self.y[v1]/_self.L**2)*(_self.L - _self.y[v1])
-    _self.aux1BC[v2] = (4.0*_self.maxVx)*(_self.y[v2]/_self.L**2)*(_self.L - _self.y[v2])
- ---------------------------------- IT IS WRONG ------------------
+   #calculated via Navier-Stokes where y = [1,3]
+   elif line == 3:
+    _self.aux1BC[v1] = _self.maxVx*(4.0*_self.y[v1] - _self.y[v1]**2 - 3.0)
+    _self.aux1BC[v2] = _self.maxVx*(4.0*_self.y[v2] - _self.y[v2]**2 - 3.0)
 
     _self.dirichletNodes.append(v1)
     _self.dirichletNodes.append(v2)
@@ -116,7 +114,7 @@ class linearBackwardFacingStep:
    v2 = _self.boundaryEdges[i][2] - 1
 
    # Noslip 
-   if line == 2 or line == 4 or line == 5 or line == 6:
+   if line == 1 or line == 4:
     _self.aux1BC[v1] = 0.0
     _self.aux1BC[v2] = 0.0
  
@@ -162,24 +160,23 @@ class linearBackwardFacingStep:
    v1 = _self.boundaryEdges[i][1] - 1
    v2 = _self.boundaryEdges[i][2] - 1
 
-   # Symmetric axis (Bottom Line)
+   # Bottom Line
    # psi_bottom can be any value. Because, important is psi_top - psi_bottom.
    # In this case, psi_bottom is zero
-   if line == 4 or line == 5 or line == 6:
+   if line == 4:
     _self.aux1BC[v1] = 0.0
     _self.aux1BC[v2] = 0.0
  
     _self.dirichletNodes.append(v1)
     _self.dirichletNodes.append(v2)
 
-   # Noslip (Top Line)
-   # Ref: Batchelor 1967 pag. 78 eq. 2.2.12
+   # Top Line
+   # Ref: Batchelor 1967 pag. 76 eq. 2.2.8
    # As psi_bottom is zero, so psi_top is:
+   # Velocity calculated via Navier-Stokes where y = [1,3]
    elif line == 1:
- ---------------------------------- IT IS WRONG ------------------
-    _self.aux1BC[v1] = (_self.maxVx*(2.0/3.0))*(_self.L)
-    _self.aux1BC[v2] = (_self.maxVx*(2.0/3.0))*(_self.L)
- ---------------------------------- IT IS WRONG ------------------
+    _self.aux1BC[v1] = _self.maxVx*(4.0/3.0)
+    _self.aux1BC[v2] = _self.maxVx*(4.0/3.0)
 
     _self.dirichletNodes.append(v1)
     _self.dirichletNodes.append(v2)
