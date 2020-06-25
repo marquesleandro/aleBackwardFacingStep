@@ -49,13 +49,27 @@ print ""
 
 
 print ' ----------------------------------------------------------------------------'
+print ' (0) - Debug'
 print ' (1) - Simulation'
-print ' (2) - Debug'
 simulation_option = int(raw_input("\n enter simulation option above: "))
 print' ----------------------------------------------------------------------------\n'
 
 
+
 print ' ----------------------------------------------------------------------------'
+print ' (1) - Taylor Galerkin Scheme'
+print ' (2) - Semi Lagrangian Scheme'
+scheme_option = int(raw_input("\n Enter simulation scheme option above: "))
+if scheme_option == 1:
+ scheme_name = 'Taylor Galerkin'
+elif scheme_option == 2:
+ scheme_name = 'Semi Lagrangian'
+print' ----------------------------------------------------------------------------\n'
+
+
+
+print ' ----------------------------------------------------------------------------'
+print ' (0) - Analytic Linear Element'
 print ' (1) - Linear Element'
 print ' (2) - Mini Element'
 print ' (3) - Quadratic Element'
@@ -64,28 +78,26 @@ polynomial_option = int(raw_input("\n Enter polynomial degree option above: "))
 print' ----------------------------------------------------------------------------\n'
 
 
-print ' ----------------------------------------------------------------------------'
-print ' 3 Gauss Points'
-print ' 4 Gauss Points'
-print ' 6 Gauss Points'
-print ' 12 Gauss Points'
-gausspoints = int(raw_input("\n Enter Gauss Points Number option above: "))
-print' ----------------------------------------------------------------------------\n'
-
-
-print ' ----------------------------------------------------------------------------'
-print ' (1) - Taylor Galerkin Scheme'
-print ' (2) - Semi Lagrangian Scheme'
-scheme_option = int(raw_input("\n Enter simulation scheme option above: "))
-print' ----------------------------------------------------------------------------\n'
-
-
-print ' ----------------------------------------------------------------------------'
-nt = int(raw_input(" Enter number of time interations (nt): "))
-print' ----------------------------------------------------------------------------\n'
-
-
 if simulation_option == 1:
+ if polynomial_option == 0:
+  gausspoints = 3
+
+ else:
+  print ' ----------------------------------------------------------------------------'
+  print ' 3 Gauss Points'
+  print ' 4 Gauss Points'
+  print ' 6 Gauss Points'
+  print ' 12 Gauss Points'
+  gausspoints = int(raw_input("\n Enter Gauss Points Number option above: "))
+  print' ----------------------------------------------------------------------------\n'
+
+
+ 
+ print ' ----------------------------------------------------------------------------'
+ nt = int(raw_input(" Enter number of time interations (nt): "))
+ print' ----------------------------------------------------------------------------\n'
+ 
+ 
  print ' ----------------------------------------------------------------------------'
  folderResults = raw_input(" Enter folder name to save simulations: ")
  print' ----------------------------------------------------------------------------\n'
@@ -95,7 +107,9 @@ if simulation_option == 1:
  print' ----------------------------------------------------------------------------\n'
 
 
-elif simulation_option == 2:
+elif simulation_option == 0:
+ gausspoints = 3
+ nt = 2
  folderResults  = 'deletar'
  observation = 'debug'
 
@@ -108,19 +122,14 @@ print ' ------------'
 start_time = time()
 
 # Linear and Mini Elements
-if polynomial_option == 1 or polynomial_option == 2:
+if polynomial_option == 0 or polynomial_option == 1 or polynomial_option == 2:
  mshFileName = 'linearBackwardFacingStep.msh'
- #mshFileName = 'mesh1.msh'
- #mshFileName = 'mesh2.msh'
- #mshFileName = 'mesh3.msh'
- #mshFileName = 'mesh4.msh'
- #mshFileName = 'mesh5.msh'
 
  pathMSHFile = searchMSH.Find(mshFileName)
  if pathMSHFile == 'File not found':
   sys.exit()
 
- if polynomial_option == 1:
+ if polynomial_option == 0 or polynomial_option == 1:
   mesh = importMSH.Linear2D(pathMSHFile, mshFileName)
 
   numNodes               = mesh.numNodes
@@ -137,14 +146,17 @@ if polynomial_option == 1 or polynomial_option == 2:
   FreedomDegree          = mesh.FreedomDegree
   numPhysical            = mesh.numPhysical 
 
-  Re = 100.0
+  Re = 10.0
   Sc = 1.0
   CFL = 0.5
   #dt = float(CFL*minLengthMesh)
-  dt = 0.1   #linear ok 
+  #dt = 0.1   #SL 
+  #dt = 0.005   #TG
+  #dt = 0.006   #compare with Luis
+  dt = 0.002   #simulation mesh4
+  #dt = 0.001   #simulation mesh5
+  nt = int(10.0/dt) #10s forced
 
-
- 
  elif polynomial_option == 2:
   mesh = importMSH.Mini2D(pathMSHFile, mshFileName)
 
@@ -172,7 +184,7 @@ if polynomial_option == 1 or polynomial_option == 2:
 
 # Quad Element
 elif polynomial_option == 3:
- mshFileName = 'quadPoiseuille.msh'
+ mshFileName = 'quadBackwardFacingStep.msh'
  
  pathMSHFile = searchMSH.Find(mshFileName)
  if pathMSHFile == 'File not found':
@@ -205,7 +217,7 @@ elif polynomial_option == 3:
 
 # Cubic Element
 elif polynomial_option == 4:
- mshFileName = 'cubicPoiseuille_cubic.msh'
+ mshFileName = 'cubicBackwardFacingStep.msh'
 
  pathMSHFile = searchMSH.Find(mshFileName)
  if pathMSHFile == 'File not found':
@@ -248,7 +260,7 @@ start_time = time()
 # ------------------------ Boundaries Conditions ----------------------------------
 
 # Linear and Mini Elements
-if polynomial_option == 1 or polynomial_option == 2:
+if polynomial_option == 0 or polynomial_option == 1 or polynomial_option == 2:
 
  # Applying vx condition
  xVelocityLHS0 = sps.lil_matrix.copy(M)
@@ -256,11 +268,16 @@ if polynomial_option == 1 or polynomial_option == 2:
  xVelocityBC.xVelocityCondition(boundaryEdges,xVelocityLHS0,neighborsNodes)
  benchmark_problem = xVelocityBC.benchmark_problem
 
- # Applying vr condition
+ # Applying vy condition
  yVelocityLHS0 = sps.lil_matrix.copy(M)
  yVelocityBC = benchmarkProblems.linearBackwardFacingStep(numPhysical,numNodes,x,y)
  yVelocityBC.yVelocityCondition(boundaryEdges,yVelocityLHS0,neighborsNodes)
- 
+
+ # Applying pressure condition
+ pressureLHS0 = - sps.lil_matrix.copy(Kxx) - sps.lil_matrix.copy(Kyy)
+ pressureBC = benchmarkProblems.linearBackwardFacingStep(numPhysical,numNodes,x,y)
+ pressureBC.pressureCondition(boundaryEdges,pressureLHS0,neighborsNodes)
+
  # Applying psi condition
  streamFunctionLHS0 = sps.lil_matrix.copy(Kxx) + sps.lil_matrix.copy(Kyy)
  streamFunctionBC = benchmarkProblems.linearBackwardFacingStep(numPhysical,numNodes,x,y)
@@ -276,18 +293,18 @@ elif polynomial_option == 3:
 
  # Applying vx condition
  xVelocityLHS0 = sps.lil_matrix.copy(M)
- xVelocityBC = benchmarkProblems.quadPoiseuille(numPhysical,numNodes,x,y)
+ xVelocityBC = benchmarkProblems.quadBackwardFacingStep(numPhysical,numNodes,x,y)
  xVelocityBC.xVelocityCondition(boundaryEdges,xVelocityLHS0,neighborsNodes)
  benchmark_problem = xVelocityBC.benchmark_problem
 
  # Applying vr condition
  yVelocityLHS0 = sps.lil_matrix.copy(M)
- yVelocityBC = benchmarkProblems.quadPoiseuille(numPhysical,numNodes,x,y)
+ yVelocityBC = benchmarkProblems.quadBackwardFacingStep(numPhysical,numNodes,x,y)
  yVelocityBC.yVelocityCondition(boundaryEdges,yVelocityLHS0,neighborsNodes)
  
  # Applying psi condition
  streamFunctionLHS0 = sps.lil_matrix.copy(Kxx) + sps.lil_matrix.copy(Kyy)
- streamFunctionBC = benchmarkProblems.quadPoiseuille(numPhysical,numNodes,x,y)
+ streamFunctionBC = benchmarkProblems.quadBackwardFacingStep(numPhysical,numNodes,x,y)
  streamFunctionBC.streamFunctionCondition(boundaryEdges,streamFunctionLHS0,neighborsNodes)
 
  # Applying vorticity condition
@@ -299,6 +316,7 @@ elif polynomial_option == 3:
 # -------------------------- Initial condition ------------------------------------
 vx = np.copy(xVelocityBC.aux1BC)
 vy = np.copy(yVelocityBC.aux1BC)
+p = np.copy(pressureBC.aux1BC)
 psi = np.copy(streamFunctionBC.aux1BC)
 w = np.zeros([numNodes,1], dtype = float)
 # ---------------------------------------------------------------------------------
@@ -326,7 +344,7 @@ psi = psi[0].reshape((len(psi[0]),1))
 
 
 # -------------------------- Import VTK File ------------------------------------
-#numNodes, numElements, IEN, x, y, vx, vy, w, w, psi = importVTK.vtkFile("/home/marquesleandro/alePoiseuille/libClass/quad499.vtk", polynomial_option)
+#numNodes, numElements, IEN, x, y, vx, vy, w, w, psi = importVTK.vtkFile("/home/marquesleandro/aleBackwardFacingStep/results/mesh4/mesh4803.vtk", polynomial_option)
 #----------------------------------------------------------------------------------
 
 
@@ -344,7 +362,7 @@ print ' PARAMETERS OF THE SIMULATION:'
 print ' -----------------------------'
 
 print ' Benchmark Problem: %s' %benchmark_problem
-print ' Scheme: %s' %str(scheme_option)
+print ' Scheme: %s' %str(scheme_name)
 print ' Element Type: %s' %str(polynomial_order)
 print ' Gaussian Quadrature (Gauss Points): %s' %str(gausspoints)
 print ' Mesh: %s' %mshFileName
@@ -373,7 +391,7 @@ os.chdir(initial_path)
 
 # ------------------------ Export VTK File ---------------------------------------
 # Linear and Mini Elements
-if polynomial_option == 1 or polynomial_option == 2:   
+if polynomial_option == 0 or polynomial_option == 1 or polynomial_option == 2:   
  save = exportVTK.Linear2D(x,y,IEN,numNodes,numElements,w,w,psi,vx,vy)
  save.create_dir(folderResults)
  save.saveVTK(folderResults + str(0))
@@ -416,7 +434,7 @@ for t in tqdm(range(1, nt)):
   print ' -----------------------------'
  
   print ' Benchmark Problem: %s' %benchmark_problem
-  print ' Scheme: %s' %str(scheme_option)
+  print ' Scheme: %s' %str(scheme_name)
   print ' Element Type: %s' %str(polynomial_order)
   print ' Gaussian Quadrature (Gauss Points): %s' %str(gausspoints)
   print ' Mesh: %s' %mshFileName
@@ -434,6 +452,7 @@ for t in tqdm(range(1, nt)):
   # ------------------------- ALE Scheme --------------------------------------------
   xmeshALE_dif = np.linalg.norm(x-x_old)
   ymeshALE_dif = np.linalg.norm(y-y_old)
+
   if not xmeshALE_dif < 5e-3 and not ymeshALE_dif < 5e-3:
    x_old = np.copy(x)
    y_old = np.copy(y)
@@ -498,7 +517,7 @@ for t in tqdm(range(1, nt)):
    start_time = time()
   
    # Linear and Mini Elements
-   if polynomial_option == 1 or polynomial_option == 2:
+   if polynomial_option == 0 or polynomial_option == 1 or polynomial_option == 2:
  
     # Applying vx condition
     xVelocityLHS0 = sps.lil_matrix.copy(M)
@@ -510,6 +529,11 @@ for t in tqdm(range(1, nt)):
     yVelocityLHS0 = sps.lil_matrix.copy(M)
     yVelocityBC = benchmarkProblems.linearBackwardFacingStep(numPhysical,numNodes,x,y)
     yVelocityBC.yVelocityCondition(boundaryEdges,yVelocityLHS0,neighborsNodes)
+
+    # Applying pressure condition
+    pressureLHS0 = - sps.lil_matrix.copy(Kxx) - sps.lil_matrix.copy(Kyy)
+    pressureBC = benchmarkProblems.linearBackwardFacingStep(numPhysical,numNodes,x,y)
+    pressureBC.pressureCondition(boundaryEdges,streamFunctionLHS0,neighborsNodes)
     
     # Applying psi condition
     streamFunctionLHS0 = sps.lil_matrix.copy(Kxx) + sps.lil_matrix.copy(Kyy)
@@ -526,18 +550,18 @@ for t in tqdm(range(1, nt)):
  
     # Applying vx condition
     xVelocityLHS0 = sps.lil_matrix.copy(M)
-    xVelocityBC = benchmarkProblems.quadPoiseuille(numPhysical,numNodes,x,y)
+    xVelocityBC = benchmarkProblems.quadBackwardFacingStep(numPhysical,numNodes,x,y)
     xVelocityBC.xVelocityCondition(boundaryEdges,xVelocityLHS0,neighborsNodes)
     benchmark_problem = xVelocityBC.benchmark_problem
    
     # Applying vr condition
     yVelocityLHS0 = sps.lil_matrix.copy(M)
-    yVelocityBC = benchmarkProblems.quadPoiseuille(numPhysical,numNodes,x,y)
+    yVelocityBC = benchmarkProblems.quadBackwardFacingStep(numPhysical,numNodes,x,y)
     yVelocityBC.yVelocityCondition(boundaryEdges,yVelocityLHS0,neighborsNodes)
     
     # Applying psi condition
     streamFunctionLHS0 = sps.lil_matrix.copy(Kxx) + sps.lil_matrix.copy(Kyy)
-    streamFunctionBC = benchmarkProblems.quadPoiseuille(numPhysical,numNodes,x,y)
+    streamFunctionBC = benchmarkProblems.quadBackwardFacingStep(numPhysical,numNodes,x,y)
     streamFunctionBC.streamFunctionCondition(boundaryEdges,streamFunctionLHS0,neighborsNodes)
    
     # Applying vorticity condition
@@ -549,7 +573,12 @@ for t in tqdm(range(1, nt)):
    print ' time duration: %.1f seconds' %bc_apply_time_solver
    print ""
    # ---------------------------------------------------------------------------------
-   
+  
+  else:
+   vxSL = vx
+   vySL = vy
+    
+ 
    
  
   # ------------------------ SOLVE LINEAR EQUATIONS ----------------------------------
@@ -591,9 +620,9 @@ for t in tqdm(range(1, nt)):
  
  
   #---------- Step 3 - Solve the vorticity transport equation ----------------------
+  w_old = np.copy(w)
   # Taylor Galerkin Scheme
   if scheme_option == 1:
-   scheme_name = 'Taylor Galerkin'
    A = np.copy(M)/dt 
    vorticityRHS = sps.lil_matrix.dot(A,w) - np.multiply(vx,sps.lil_matrix.dot(Gx,w))\
          - np.multiply(vy,sps.lil_matrix.dot(Gy,w))\
@@ -610,9 +639,7 @@ for t in tqdm(range(1, nt)):
   elif scheme_option == 2:
  
    # Linear Element   
-   if polynomial_option == 1:
-    scheme_name = 'Semi Lagrangian Linear'
- 
+   if polynomial_option == 0 or polynomial_option == 1:
     w_d = semiLagrangian.Linear2D(numNodes, neighborsElements, IEN, x, y, vxSL, vySL, dt, w)
  
     A = np.copy(M)/dt
@@ -629,8 +656,6 @@ for t in tqdm(range(1, nt)):
  
    # Mini Element   
    elif polynomial_option == 2:
-    scheme_name = 'Semi Lagrangian Mini'
- 
     w_d = semiLagrangian.Mini2D(numNodes, neighborsElements, IEN, z, r, vz, vr, dt, w)
  
     A = np.copy(Mr)/dt
@@ -647,8 +672,6 @@ for t in tqdm(range(1, nt)):
  
    # Quad Element   
    elif polynomial_option == 3:
-    scheme_name = 'Semi Lagrangian Quad'
- 
     w_d = semiLagrangian.Quad2D(numNodes, neighborsElements, IEN, x, y, vxSL, vySL, dt, w)
  
     A = np.copy(M)/dt
@@ -667,6 +690,7 @@ for t in tqdm(range(1, nt)):
   #---------- Step 4 - Solve the streamline equation --------------------------------
   # Solve Streamline
   # psi condition
+  psi_old = np.copy(psi)
   streamFunctionRHS = sps.lil_matrix.dot(M,w)
   streamFunctionRHS = np.multiply(streamFunctionRHS,streamFunctionBC.aux2BC)
   streamFunctionRHS = streamFunctionRHS + streamFunctionBC.dirichletVector
@@ -693,7 +717,21 @@ for t in tqdm(range(1, nt)):
   vy = scipy.sparse.linalg.cg(yVelocityBC.LHS,yVelocityRHS,vy, maxiter=1.0e+05, tol=1.0e-05)
   vy = vy[0].reshape((len(vy[0]),1))
   #----------------------------------------------------------------------------------
+
+
+
+  #---------- Step 6 - Compute the pressure field -----------------------------------
+  # Pressure
+  p_old = np.copy(p)
+  pressureRHS =   2.0*(sps.lil_matrix.dot(Kxx,psi)*sps.lil_matrix.dot(Kyy,psi)\
+                     - sps.lil_matrix.dot(Kxy,psi)**2)
+  pressureRHS = np.multiply(pressureRHS,pressureBC.aux2BC)
+  pressureRHS = pressureRHS + pressureBC.dirichletVector
+  p = scipy.sparse.linalg.cg(pressureBC.LHS,pressureRHS,p, maxiter=1.0e+05, tol=1.0e-05)
+  p = p[0].reshape((len(p[0]),1))
+  #----------------------------------------------------------------------------------
  
+
   end_solver_time = time()
   solver_time = end_solver_time - start_solver_time
   print ' time duration: %.1f seconds' %solver_time
@@ -706,14 +744,14 @@ for t in tqdm(range(1, nt)):
  
   # ------------------------ Export VTK File ---------------------------------------
   # Linear and Mini Elements
-  if polynomial_option == 1 or polynomial_option == 2:   
-   save = exportVTK.Linear2D(x,y,IEN,numNodes,numElements,w,w,psi,vx,vy)
+  if polynomial_option == 0 or polynomial_option == 1 or polynomial_option == 2:   
+   save = exportVTK.Linear2D(x,y,IEN,numNodes,numElements,w,psi,p,vx,vy)
    save.create_dir(folderResults)
    save.saveVTK(folderResults + str(t))
  
   # Quad Element
   elif polynomial_option == 3:   
-   save = exportVTK.Quad2D(x,y,IEN,numNodes,numElements,w,w,psi,vx,vy)
+   save = exportVTK.Quad2D(x,y,IEN,numNodes,numElements,w,psi,p,vx,vy)
    save.create_dir(folderResults)
    save.saveVTK(folderResults + str(t))
   # ---------------------------------------------------------------------------------
@@ -722,9 +760,9 @@ for t in tqdm(range(1, nt)):
  
  
   # ------------------------ CHECK STEADY STATE ----------------------------------
-  if np.all(vx == vx_old) and np.all(vy == vy_old):
-   end_type = 1
-   break
+  #if np.all(vx == vx_old) and np.all(vy == vy_old) and np.all(p == p_old) and np.all(psi == p_old) and np.all(w == w_old):
+  # end_type = 1
+  # break
   # ---------------------------------------------------------------------------------
  
   # ------------------------ CHECK CONVERGENCE RESULT ----------------------------------
